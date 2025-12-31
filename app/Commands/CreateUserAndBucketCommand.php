@@ -43,21 +43,15 @@ class CreateUserAndBucketCommand extends Command
 
         // Read AWS region from ~/.aws/config (defaults to ca-central-1)
         $awsRegion = $this->getAwsRegion($profile);
+
         clear();
 
-
-
         render(<<<HTML
-<div class="ml-2 p-2 bg-blue-600 text-white font-bold">
-    AWS User and S3 Bucket Creation Tool
-</div>
-HTML);
+                <div class="ml-2 p-2 bg-blue-600 text-white font-bold">
+                    AWS User and S3 Bucket Creation Tool
+                </div>
+            HTML);
 
-        table(
-            headers: ['Name', 'Email'],
-            rows: [['nav', 'navbhatthal@gmail.com']]
-        );
-        // $this->info("Using AWS profile: [{$profile}], region: {$awsRegion}");
         $username = text(
             label: 'Enter the username for the new IAM user',
             hint: 'no underscores, dashes are allowed, lowercase only',
@@ -150,16 +144,23 @@ HTML);
             $iamClient->putUserPolicy([
                 'UserName' => $username,
                 'PolicyName' => 'S3BucketPolicy',
-                'PolicyDocument' => json_encode($userPolicy),
+                'PolicyDocument' => json_encode($userPolicy, JSON_UNESCAPED_SLASHES),
             ]);
             $this->info('Policy attached.');
 
             // Display access key information
             $this->newLine(2);
-            $this->info("Access Key ID: {$accessKeyId}");
-            $this->info("Secret Access Key: {$secretAccessKey}");
-            $this->info("User Arn: {$userArn}");
-            $this->info("Bucket location: {$bucketLocation}");
+            table(
+                // headers: ['Name', 'Email'],
+                rows: [
+                    ['User name', $username],
+                    ['User Arn', $userArn],
+                    ['Bucket Name', $bucketName],
+                    ['Bucket Location', $bucketLocation],
+                    ['Access Key ID', $accessKeyId],
+                    ['Secret Access Key', $secretAccessKey],
+                ]
+            );
             $this->newLine(2);
 
             // Display .env formatted output
