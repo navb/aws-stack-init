@@ -5,6 +5,10 @@ namespace App\Commands;
 use Aws\Iam\IamClient;
 use Aws\S3\S3Client;
 use LaravelZero\Framework\Commands\Command;
+use function Laravel\Prompts\text;
+use function Laravel\Prompts\table;
+use function Laravel\Prompts\clear;
+use function Termwind\{render};
 
 class CreateUserAndBucketCommand extends Command
 {
@@ -39,12 +43,44 @@ class CreateUserAndBucketCommand extends Command
 
         // Read AWS region from ~/.aws/config (defaults to ca-central-1)
         $awsRegion = $this->getAwsRegion($profile);
+        clear();
 
-        $this->info("Using AWS profile: [{$profile}], region: {$awsRegion}");
 
-        // Input for new user and bucket
-        $username = $this->ask('Enter the username for the new IAM user (no underscores, dashes are allowed, lowercase only)');
-        $bucketName = $this->ask('Enter the name for the S3 bucket (no underscores, dashes are allowed, lowercase only)');
+
+        render(<<<HTML
+<div class="ml-2 p-2 bg-blue-600 text-white font-bold">
+    AWS User and S3 Bucket Creation Tool
+</div>
+HTML);
+
+        table(
+            headers: ['Name', 'Email'],
+            rows: [['nav', 'navbhatthal@gmail.com']]
+        );
+        // $this->info("Using AWS profile: [{$profile}], region: {$awsRegion}");
+        $username = text(
+            label: 'Enter the username for the new IAM user',
+            hint: 'no underscores, dashes are allowed, lowercase only',
+            validate: fn(string $value) => match (true) {
+                str_contains($value, '_') => 'The name must not contain underscores.',
+                !preg_match('/^[a-z0-9-]+$/', $value) => 'The name can only contain lowercase letters, numbers, and dashes.',
+                strlen($value) < 3 => 'The name must be at least 3 characters.',
+                strlen($value) > 255 => 'The name must not exceed 255 characters.',
+                default => null
+            }
+        );
+
+        $bucketName = text(
+            label: 'Enter the name for the S3 bucket',
+            hint: 'no underscores, dashes are allowed, lowercase only',
+            validate: fn(string $value) => match (true) {
+                str_contains($value, '_') => 'The name must not contain underscores.',
+                !preg_match('/^[a-z0-9-]+$/', $value) => 'The name can only contain lowercase letters, numbers, and dashes.',
+                strlen($value) < 3 => 'The name must be at least 3 characters.',
+                strlen($value) > 255 => 'The name must not exceed 255 characters.',
+                default => null
+            }
+        );
 
         // AWS client configuration with credentials
         $awsConfig = [
