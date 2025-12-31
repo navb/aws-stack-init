@@ -9,6 +9,7 @@ use function Laravel\Prompts\text;
 use function Laravel\Prompts\table;
 use function Laravel\Prompts\clear;
 use function Termwind\{render};
+use function Laravel\Prompts\confirm;
 
 class CreateUserAndBucketCommand extends Command
 {
@@ -47,7 +48,7 @@ class CreateUserAndBucketCommand extends Command
         clear();
 
         render(<<<HTML
-                <div class="ml-2 p-2 bg-blue-600 text-white font-bold">
+                <div class="ml-2 mb-2 px-14 py-1  bg-blue-600 text-white font-bold">
                     AWS User and S3 Bucket Creation Tool
                 </div>
             HTML);
@@ -75,6 +76,21 @@ class CreateUserAndBucketCommand extends Command
                 default => null
             }
         );
+
+        $emailSetup = confirm('Do you want to add email (SES) capability?');
+
+        if ($emailSetup) {
+            $domain = text(
+                label: 'Enter the domain name for SES setup',
+                hint: 'only enter the domain, e.g. example.com',
+                validate: fn(string $value) => match (true) {
+                    !preg_match('/^[a-z0-9-]+$/', $value) => 'The name can only contain lowercase letters, numbers, and dashes.',
+                    strlen($value) < 3 => 'The name must be at least 3 characters.',
+                    strlen($value) > 255 => 'The name must not exceed 255 characters.',
+                    default => null
+                }
+            );
+        }
 
         // AWS client configuration with credentials
         $awsConfig = [
