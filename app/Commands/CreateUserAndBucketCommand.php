@@ -84,7 +84,7 @@ class CreateUserAndBucketCommand extends Command
                 label: 'Enter the domain name for SES setup',
                 hint: 'only enter the domain, e.g. example.com',
                 validate: fn(string $value) => match (true) {
-                    !preg_match('/^[a-z0-9-]+$/', $value) => 'The name can only contain lowercase letters, numbers, and dashes.',
+                    !preg_match('/^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/', $value) => 'Please enter a valid domain name (e.g. example.com).',
                     strlen($value) < 3 => 'The name must be at least 3 characters.',
                     strlen($value) > 255 => 'The name must not exceed 255 characters.',
                     default => null
@@ -156,13 +156,44 @@ class CreateUserAndBucketCommand extends Command
             ];
 
             // Attach the user policy
-            $this->info('Attaching policy to user...');
+            $this->info('Attaching S3 policy to user...');
             $iamClient->putUserPolicy([
                 'UserName' => $username,
                 'PolicyName' => 'S3BucketPolicy',
                 'PolicyDocument' => json_encode($userPolicy, JSON_UNESCAPED_SLASHES),
             ]);
-            $this->info('Policy attached.');
+            $this->info('S3 policy attached.');
+
+            // Add SES policy if email setup was requested
+            if ($emailSetup) {
+                $sesPolicy = [
+                    'Version' => '2012-10-17',
+                    'Statement' => [
+                        [
+                            'Sid' => 'AllowSendFromDomain',
+                            'Effect' => 'Allow',
+                            'Action' => [
+                                'ses:SendEmail',
+                                'ses:SendRawEmail',
+                            ],
+                            'Resource' => '*',
+                            'Condition' => [
+                                'StringLike' => [
+                                    'ses:FromAddress' => "*@{$domain}",
+                                ],
+                            ],
+                        ],
+                    ],
+                ];
+
+                $this->info('Attaching SES policy to user...');
+                $iamClient->putUserPolicy([
+                    'UserName' => $username,
+                    'PolicyName' => 'SESEmailPolicy',
+                    'PolicyDocument' => json_encode($sesPolicy, JSON_UNESCAPED_SLASHES),
+                ]);
+                $this->info('SES policy attached.');
+            }
 
             // Display access key information
             $this->newLine(2);
