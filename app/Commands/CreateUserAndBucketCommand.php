@@ -29,15 +29,5 @@ class CreateUserAndBucketCommand extends Command
         // Input for username
         $username = $this->ask('Enter the username for the new IAM user (lowercase, dashes are allowed, no underscores)');
         $bucketName = $this->ask('Enter the name for the new S3 bucket (lowercase, dashes are allowed, no underscores)');
-        $this->info('User created successfully for ' . $username);
-        $this->info('Bucket created successfully for ' . $bucketName);
-    }
-
-    /**
-     * Define the command's schedule.
-     */
-    public function schedule(Schedule $schedule): void
-    {
-        // $schedule->command(static::class)->everyMinute();
     }
 }
